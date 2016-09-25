@@ -1,12 +1,17 @@
 #include "Machine.h"
 #include "FeaturesSelection.h"
 
-#include <iostream>
 #include <Python.h>
 #include <boost/python.hpp>
 using namespace std;
 using namespace boost::python;
 
+
+struct LoadDataFailedException {};
+
+void translateException(const LoadDataFailedException& x) {
+    PyErr_SetString(PyExc_UserWarning, "Failed to load data from dongdu.model and dongdu.map");
+};
 
 class DongDu {
 
@@ -17,7 +22,7 @@ public:
     DongDu(int length) {
         predictor = new Machine(length, "", PREDICT);
         if (!predictor->load()) {
-            cout << "Failed to load data from dongdu.model and dongdu.map" << endl;
+            throw LoadDataFailedException();
         }
     }
     virtual ~DongDu() {
@@ -30,6 +35,8 @@ public:
 
 BOOST_PYTHON_MODULE(tokenizer)
 {
+    register_exception_translator<LoadDataFailedException>(translateException);
+
     class_<DongDu>("DongDu", init<int>())
         .def("segment", &DongDu::segment)
     ;
